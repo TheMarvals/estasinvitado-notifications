@@ -17,7 +17,7 @@ flowchart LR
 1. Crea una **aplicación conectada a GitHub** desde `TheMarvals/estasinvitado-notifications`, rama `main`.
 2. Selecciona Docker Compose. **Base Directory:** `/`. **Docker Compose Location:** `/docker-compose.yaml`.
 3. Define `RESEND_API_KEY` como secreto y, opcionalmente, `RESEND_FROM`, cuyo valor predeterminado es `notifications@estasinvitado.lat`. El dominio debe estar verificado en Resend. Coolify genera la clave administrativa `SERVICE_PASSWORD_64_NOTIFICATIONS`.
-4. Asigna un dominio HTTPS al servicio `notifications`, puerto interno **3001**, y despliega. Con wildcard configurado, Coolify puede generar el dominio.
+4. Asigna un dominio HTTPS al servicio `notifications`, puerto interno **28461**, y despliega. Con wildcard configurado, Coolify puede generar el dominio.
 5. Conserva el volumen `notifications-data` y activa Auto Deploy. Usa **una instancia** del servicio por base SQLite. El worker limita los envíos globales a uno por segundo; todas las invitaciones comparten la cuota de tu cuenta Resend.
 
 Usa una aplicación desde GitHub, no un servicio «Docker Compose Empty»: Coolify debe clonar este repositorio para encontrar el `Dockerfile` que utiliza `build: .`. Pegar únicamente el YAML en un servicio vacío produce el error `Dockerfile: no such file or directory`.
@@ -144,9 +144,11 @@ node --env-file-if-exists=.env scripts/notification-worker.mjs
 npm test
 docker build -t invitation-notifications .
 # Configura primero .env con tus valores; el contenedor usa /data.
-docker run --rm --env-file .env -p 3001:3001 \
+docker run --rm --env-file .env -p 28461:28461 \
   -e DATABASE_PATH=/data/notifications.sqlite \
   -v notifications-local:/data invitation-notifications
 ```
 
 Las pruebas usan un proveedor simulado: verifican aislamiento entre invitaciones, claves, duplicados, validación, reintentos, escapes HTML y recuperación de la cola sin enviar correos reales.
+
+Los puertos del Compose son internos (`expose`): no se publican en el host con `ports`. Coolify dirige el dominio HTTPS al contenedor mediante su proxy, por lo que otros contenedores pueden usar el mismo puerto interno sin conflicto. Si el dominio ya estaba configurado en Coolify con el puerto anterior, actualiza su destino al puerto indicado arriba antes de redesplegar.

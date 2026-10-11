@@ -4,14 +4,15 @@ services:
     restart: unless-stopped
     init: true
     environment:
-      SERVICE_URL_NOTIFICATIONS_3001: /
+      SERVICE_URL_NOTIFICATIONS_28461: /
       ADMIN_API_KEY: ${SERVICE_PASSWORD_64_NOTIFICATIONS}
       RESEND_API_KEY: ${RESEND_API_KEY:?}
       RESEND_FROM: ${RESEND_FROM:-notifications@estasinvitado.lat}
       DATABASE_PATH: /data/notifications.sqlite
-      PORT: 3001
+      PORT: 28461
+    # Internal container port only; Coolify routes HTTPS through its proxy.
     expose:
-      - '3001'
+      - '28461'
     volumes:
       - notifications-data:/data
 volumes:
