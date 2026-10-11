@@ -24,6 +24,17 @@ Usa una aplicación desde GitHub, no un servicio «Docker Compose Empty»: Cooli
 
 No hace falta Redis ni instalar dependencias: utiliza Node 24 y su módulo SQLite. El volumen guarda invitaciones, hashes de claves, eventos y cola. Haz backups consistentes de SQLite con su API de backup o con el servicio detenido, incluyendo sus archivos WAL si existen.
 
+## Si despliegas con Dockerfile directamente
+
+El modo Dockerfile también está soportado, pero Coolify no aplica `docker-compose.yaml` en esa modalidad. Configura en la aplicación:
+
+- **General → Ports Exposes:** `28461`. Deja **Ports Mappings** vacío para acceder mediante el proxy HTTPS.
+- **Variables de entorno en ejecución:** `PORT=28461`, `DATABASE_PATH=/data/notifications.sqlite`, `RESEND_API_KEY`, `RESEND_FROM=notifications@estasinvitado.lat` y `ADMIN_API_KEY` (al menos 32 caracteres). En esta modalidad debes generar la clave administrativa, por ejemplo con `openssl rand -hex 32`.
+- **Persistent Storage:** añade un volumen con destino `/data`. Conserva el volumen existente si ya contiene datos. La imagen escribe como usuario `node` (UID/GID 1000); cualquier directorio del host montado manualmente debe permitirle escribir.
+- **Healthcheck:** conserva el incluido en el Dockerfile, que usa Node para consultar `/health`. No necesita curl ni wget. El aviso genérico de Coolify sobre esas herramientas no explica un fallo de arranque por permisos.
+
+Guarda los cambios y redespliega. El error `EACCES: permission denied, mkdir './.local'` indica que se está usando la ruta local en el contenedor. Configura `/data/notifications.sqlite`; la imagen también mantiene `/app/.local` como enlace a `/data` para admitir la configuración anterior sin guardar SQLite en una carpeta efímera de la aplicación.
+
 ## Registrar cada invitación
 
 Desde una terminal de confianza, configura `NOTIFICATIONS_URL` con el dominio del servicio y `ADMIN_API_KEY` con la clave administrativa generada por Coolify. Crea `invitation.json` con tus datos reales:
@@ -143,6 +154,7 @@ node --env-file-if-exists=.env scripts/notification-worker.mjs
 # Desde esta carpeta
 npm test
 docker build -t invitation-notifications .
+node scripts/production-smoke.mjs invitation-notifications
 # Configura primero .env con tus valores; el contenedor usa /data.
 docker run --rm --env-file .env -p 28461:28461 \
   -e DATABASE_PATH=/data/notifications.sqlite \

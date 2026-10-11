@@ -15,3 +15,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build image and run service tests
         run: docker build -t estasinvitado-notifications:ci .
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify non-root startup and database persistence
+        run: node scripts/production-smoke.mjs estasinvitado-notifications:ci

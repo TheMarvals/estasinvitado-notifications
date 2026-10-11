@@ -10,7 +10,8 @@ WORKDIR /app
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=28461 DATABASE_PATH=/data/notifications.sqlite
 COPY --from=verify /app/package.json ./
 COPY --from=verify /app/src ./src
-RUN mkdir -p /data && chown node:node /data
+# Keep the legacy local database path on the persistent, writable data volume.
+RUN mkdir -p /data && chown node:node /data && ln -s /data /app/.local
 USER node
 EXPOSE 28461
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
